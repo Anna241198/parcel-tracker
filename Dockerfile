@@ -1,10 +1,26 @@
+# Стадия сборки
+FROM golang:1.22 AS builder
 
-FROM golang:1.22
+# Установка рабочей директории
 WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN go build -o app .
-EXPOSE 8080
-CMD ["./app"]
 
+# Копирование файлов зависимостей
+COPY go.mod go.sum ./
+
+# Установка зависимостей
+RUN go mod download
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка приложения
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main main.go
+
+# Финальный минималистичный образ
+FROM scratch
+
+# Копирование бинарного файла из стадии сборки
+COPY --from=builder /main /main
+
+# Команда запуска
+CMD ["/main"]
